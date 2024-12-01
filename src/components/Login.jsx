@@ -57,7 +57,7 @@ function Login() {
             />
           </div>
           <div className='mb-4 text-left'>
-            <label className='block text-sm font-medium text-gray-700'>Familiya(Фамилиянгиз)</label>
+            <label className='block text-sm font-medium text-gray-700'>Familiya(Фамилянгиз)</label>
             <input
               type='text'
               value={lastName}

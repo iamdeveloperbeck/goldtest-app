@@ -47,7 +47,7 @@ function Login() {
         <h1 className='text-4xl font-bold mb-4'>Testga kirish</h1>
         <form onSubmit={handleLogin} className='text-center'>
           <div className='mb-4 text-left'>
-            <label className='block text-sm font-medium text-gray-700'>Ism</label>
+            <label className='block text-sm font-medium text-gray-700'>Ism(Исмингиз)</label>
             <input
               type='text'
               value={firstName}
@@ -57,7 +57,7 @@ function Login() {
             />
           </div>
           <div className='mb-4 text-left'>
-            <label className='block text-sm font-medium text-gray-700'>Familiya</label>
+            <label className='block text-sm font-medium text-gray-700'>Familiya(Фамилиянгиз)</label>
             <input
               type='text'
               value={lastName}
@@ -67,7 +67,7 @@ function Login() {
             />
           </div>
           <div className='mb-4 text-left'>
-            <label className='block text-sm font-medium text-gray-700'>Yo'nalishni tanlang:</label>
+            <label className='block text-sm font-medium text-gray-700'>Yo'nalishni tanlang(Йўналишни танланг):</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}

@@ -106,7 +106,7 @@ function TestPage() {
   };
 
   if (tests.length === 0) {
-    return <div className='w-full h-screen flex items-center justify-center'><p className='p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50'>Testlar yuklanmoqda kutib turing!</p></div>;
+    return <div className='w-full h-screen flex items-center justify-center'><p className='p-4 mb-4 text-sm text-red-800 font-bold rounded-lg bg-red-50'>Testlar yuklanmoqda kutib turing!</p></div>;
   }
 
   const currentQuestion = tests[currentQuestionIndex].questions[0];
@@ -128,13 +128,13 @@ function TestPage() {
       ) : (
         <>
           <div className='border p-4 mb-4 rounded-[15px]'>
-            <p className='mb-4 text-2xl font-medium'>{currentQuestion.question}</p>
+            <p className='mb-4 text-2xl font-bold'>{currentQuestion.question}</p>
             <div className='flex flex-col items-start'>
               {currentQuestion.options.map((option, index) => (
                 <button
                   key={index}
                   onClick={() => handleAnswer(option)}
-                  className={`bg-gray-200 p-2 mb-2 rounded hover:bg-blue-200 ${answers[currentQuestionIndex] === option ? 'bg-blue-200' : ''}`}
+                  className={`bg-gray-200 p-2 mb-2 rounded font-bold hover:bg-blue-200 ${answers[currentQuestionIndex] === option ? 'bg-blue-200' : ''}`}
                 >
                   {option}
                 </button>
@@ -147,7 +147,7 @@ function TestPage() {
               <button
                 key={index}
                 onClick={() => setCurrentQuestionIndex(index)}
-                className={`rounded-full text-[12px] w-[30px] h-[30px] ${answers[index] ? 'bg-green-200' : 'bg-gray-200'}`}
+                className={`rounded-full text-[12px] w-[30px] h-[30px] font-bold ${answers[index] ? 'bg-green-200' : 'bg-gray-200'}`}
               >
                 {index + 1}
               </button>

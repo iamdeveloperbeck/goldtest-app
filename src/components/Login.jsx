@@ -47,7 +47,7 @@ function Login() {
         <h1 className='text-4xl font-bold mb-4'>Testga kirish</h1>
         <form onSubmit={handleLogin} className='text-center'>
           <div className='mb-4 text-left'>
-            <label className='block text-sm font-medium text-gray-700'>Ism(Исмингиз)</label>
+            <label className='block text-sm font-bold text-gray-700'>Ism(Исмингиз)</label>
             <input
               type='text'
               value={firstName}
@@ -57,7 +57,7 @@ function Login() {
             />
           </div>
           <div className='mb-4 text-left'>
-            <label className='block text-sm font-medium text-gray-700'>Familiya(Фамилянгиз)</label>
+            <label className='block text-sm font-bold text-gray-700'>Familiya(Фамилянгиз)</label>
             <input
               type='text'
               value={lastName}
@@ -67,11 +67,11 @@ function Login() {
             />
           </div>
           <div className='mb-4 text-left'>
-            <label className='block text-sm font-medium text-gray-700'>Yo'nalishni tanlang(Йўналишни танланг):</label>
+            <label className='block text-sm font-bold text-gray-700'>Yo'nalishni tanlang(Йўналишни танланг):</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className='bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5'
+              className='bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 font-bold'
             >
               <option value=''>Yo'nalishni tanlang</option>
               {categories.map(category => (
@@ -79,7 +79,7 @@ function Login() {
               ))}
             </select>
           </div>
-          <button type='submit' className='text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 focus:outline-none'>Boshlash</button>
+          <button type='submit' className='text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm px-5 py-2.5 me-2 mb-2 focus:outline-none'>Boshlash</button>
         </form>
       </div>
     </div>

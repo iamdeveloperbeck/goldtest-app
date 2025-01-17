@@ -177,7 +177,7 @@ function TestPage() {
                 <p className={`py-3 px-4 rounded-full inline-block ${
                   result.passed ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
                 }`}>
-                  Holat: {result.passed ? 'Siz testdan o'tdingiz!' : 'Afsus testdan o'ta olmadingiz!'}
+                  Holat: {result.passed ? "Siz testdan o'tdingiz!" : "Afsus testdan o'ta olmadingiz!"}
                 </p>
               </div>
             </div>

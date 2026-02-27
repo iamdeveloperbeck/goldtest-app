@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../data/firebase';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 
 function Login() {
   const [firstName, setFirstName] = useState('');
@@ -11,6 +11,7 @@ function Login() {
   const [isVisible, setIsVisible] = useState(false);
   const [testType, setTestType] = useState('kirish'); // 'kirish' or 'yakuniy'
   const [userChangedTestType, setUserChangedTestType] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const categoriesRef = useRef({}); // map id -> category
 
@@ -30,6 +31,12 @@ function Login() {
     } catch (err) {
       console.error('Kategoriyalarni olishda xato:', err);
     }
+  };
+
+  const normalizeName = (s) => {
+    if (!s) return '';
+    const t = s.trim();
+    return t.charAt(0).toUpperCase() + t.slice(1);
   };
 
   // Decide a category's implied test type using various signals
@@ -100,20 +107,43 @@ function Login() {
       return;
     }
 
+    // sanitize inputs
+    const cleanFirst = normalizeName(firstName);
+    const cleanLast = normalizeName(lastName);
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
+      // Check if a matching user already exists to avoid duplicates
+      const q = query(
+        collection(db, 'users'),
+        where('firstName', '==', cleanFirst),
+        where('lastName', '==', cleanLast),
+        where('selectedCategory', '==', selectedCategory)
+      );
+      const snaps = await getDocs(q);
+      if (!snaps.empty) {
+        const existingId = snaps.docs[0].id;
+        setIsSubmitting(false);
+        navigate('/test', { state: { userId: existingId, firstName: cleanFirst, lastName: cleanLast, selectedCategory, testType } });
+        return;
+      }
+
       const docRef = await addDoc(collection(db, 'users'), {
-        firstName,
-        lastName,
+        firstName: cleanFirst,
+        lastName: cleanLast,
         selectedCategory,
         testType,
         correct: 0,
         incorrect: 0,
         createdAt: new Date().toISOString()
       });
-      navigate('/test', { state: { userId: docRef.id, firstName, lastName, selectedCategory, testType } });
+      navigate('/test', { state: { userId: docRef.id, firstName: cleanFirst, lastName: cleanLast, selectedCategory, testType } });
     } catch (error) {
       console.error("Foydalanuvchini saqlashda xato:", error);
       alert("Foydalanuvchini saqlashda xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -159,6 +189,7 @@ function Login() {
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              onBlur={() => setLastName(normalizeName(lastName))}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white/50 backdrop-blur-sm"
               placeholder="Familiyangizni kiriting"
               required
@@ -168,9 +199,11 @@ function Login() {
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Ism (Исмингиз)</label>
             <input
+              autoFocus
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              onBlur={() => setFirstName(normalizeName(firstName))}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white/50 backdrop-blur-sm"
               placeholder="Ismingizni kiriting"
               required
@@ -227,9 +260,10 @@ function Login() {
 
           <button
             type="submit"
-            className="w-full py-3 px-6 text-white font-medium bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
+            disabled={isSubmitting}
+            className={`w-full py-3 px-6 text-white font-medium bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
-            Boshlash
+            {isSubmitting ? 'Kutilyapti...' : 'Boshlash'}
           </button>
         </form>
 

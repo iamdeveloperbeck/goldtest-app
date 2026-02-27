@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { db } from "../data/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -11,12 +12,16 @@ function TestPage() {
   const [categoryName, setCategoryName] = useState("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [selectionLocked, setSelectionLocked] = useState(false);
   const [timeLeft, setTimeLeft] = useState(1800); // default 30 minutes
   const [result, setResult] = useState(null);
   const [passingScore, setPassingScore] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [loadingTests, setLoadingTests] = useState(false);
   const [fetchError, setFetchError] = useState("");
+  const submittedRef = useRef(false);
+  const lockTimeoutRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsVisible(true);
@@ -32,7 +37,6 @@ function TestPage() {
       const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
       return () => clearInterval(timer);
     } else if (timeLeft <= 0 && !result) {
-      // time over -> submit
       submitResults();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,19 +123,62 @@ function TestPage() {
   };
 
   const handleAnswer = (answer) => {
+    if (selectionLocked || result) return;
+    // prevent rapid repeated clicks
+    setSelectionLocked(true);
     setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }));
-    const nextIndex = currentQuestionIndex + 1;
-    if (nextIndex < tests.length) {
-      setCurrentQuestionIndex(nextIndex);
-    } else {
-      submitResults();
-    }
+
+    // small delay to show feedback then auto-advance
+    lockTimeoutRef.current = setTimeout(() => {
+      const nextIndex = currentQuestionIndex + 1;
+      if (nextIndex < tests.length) {
+        setCurrentQuestionIndex(nextIndex);
+        setSelectionLocked(false);
+      } else {
+        // final question -> submit
+        submitResults();
+      }
+    }, 600); // 600ms gives visual feedback
   };
+
+  // Allow explicit navigation but prevent skipping unanswered when using Next
+  const goToIndex = (index) => {
+    if (selectionLocked || result) return;
+    setCurrentQuestionIndex(index);
+  };
+
+  const handlePrev = () => {
+    if (selectionLocked || result) return;
+    setCurrentQuestionIndex((i) => Math.max(0, i - 1));
+  };
+
+  const handleNext = () => {
+    if (selectionLocked || result) return;
+    // require answer before moving forward to prevent skipping
+    if (!answers[currentQuestionIndex]) {
+      // small visual indicator could be added; use alert for clarity
+      // eslint-disable-next-line no-alert
+      alert('Iltimos avval javobni tanlang.');
+      return;
+    }
+    const next = currentQuestionIndex + 1;
+    if (next < tests.length) setCurrentQuestionIndex(next);
+    else submitResults();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (lockTimeoutRef.current) clearTimeout(lockTimeoutRef.current);
+    };
+  }, []);
 
   const submitResults = async () => {
     if (!Array.isArray(tests) || tests.length === 0) {
       return;
     }
+
+    if (submittedRef.current) return;
+    submittedRef.current = true;
 
     // Calculate correct answers
     const correctCount = tests.reduce((count, test, index) => {
@@ -231,9 +278,9 @@ function TestPage() {
         {/* Header Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
           <div className="bg-gradient-to-r from-teal-600 to-blue-600 p-6">
-            <h1 className="text-3xl font-bold text-white mb-3">Test sinovi</h1>
+            <h1 className="text-3xl font-bold text-white mb-3">Malaka oshirish testi</h1>
             <div className="space-y-1 text-teal-50">
-              <p className="text-lg">
+              <p className="text-lg font-bold">
                 Xush kelibsiz, {firstName} {lastName}
               </p>
               <p className="text-sm">Yo'nalish: {categoryName}</p>
@@ -320,9 +367,9 @@ function TestPage() {
                 </div>
               </div>
 
-              <div className="mt-6 text-center">
+              <div className="mt-6 text-center flex flex-col">
                 <p
-                  className={`py-3 px-4 rounded-full inline-block ${
+                  className={`py-3 px-4 rounded-full inline-block font-bold ${
                     result.passed
                       ? "bg-green-50 text-green-800"
                       : "bg-red-50 text-red-800"
@@ -333,6 +380,9 @@ function TestPage() {
                     ? "Siz testdan o'tdingiz!"
                     : "Afsus testdan o'ta olmadingiz!"}
                 </p>
+                <Link to="/" className="mt-4 inline-block bg-teal-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-teal-600 transition-colors">
+                  Bosh sahifaga qaytish
+                </Link>
               </div>
             </div>
           </div>
@@ -340,24 +390,45 @@ function TestPage() {
           <>
             {/* Question Card */}
             <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-              <h2 className="text-xl font-medium text-gray-800 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-800">Savol {currentQuestionIndex + 1} / {tests.length}</h3>
+                  <p className="text-sm text-gray-500">{categoryName}</p>
+                </div>
+                <div className="text-sm text-gray-600">{formatTime(timeLeft)}</div>
+              </div>
+
+              <h2 className="text-xl font-medium text-gray-800 mb-4">
                 {currentQuestion.question}
               </h2>
 
               <div className="space-y-3">
-                {currentQuestion.options.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswer(option)}
-                    className={`w-full text-left p-4 rounded-xl transition-all duration-200 ${
-                      answers[currentQuestionIndex] === option
-                        ? "bg-teal-500 text-white shadow-lg scale-[1.02]"
-                        : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
+                {currentQuestion.options.map((option, index) => {
+                  const selected = answers[currentQuestionIndex] === option;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswer(option)}
+                      disabled={selectionLocked}
+                      aria-pressed={selected}
+                      className={`w-full text-left p-4 rounded-xl transition-all duration-200 flex items-center justify-between ${selected ? 'bg-teal-500 text-white shadow-lg scale-[1.02]' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'} ${selectionLocked ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                      <span>{option}</span>
+                      {selected && (
+                        <span className="ml-4 inline-flex items-center justify-center w-6 h-6 bg-white/20 rounded-full">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button onClick={handlePrev} disabled={currentQuestionIndex === 0 || selectionLocked} className={`px-3 py-2 rounded-lg border ${currentQuestionIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>Oldingi</button>
+                  <button onClick={handleNext} disabled={selectionLocked} className="px-3 py-2 rounded-lg bg-teal-500 text-white">Keyingi</button>
+                </div>
               </div>
             </div>
 
@@ -367,19 +438,9 @@ function TestPage() {
                 {tests.map((_, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentQuestionIndex(index)}
-                    className={`aspect-square rounded-lg text-sm font-medium transition-all duration-200
-                      ${
-                        answers[index]
-                          ? "bg-teal-500 text-white"
-                          : "bg-gray-50 text-gray-600 hover:bg-teal-50 hover:text-teal-600"
-                      }
-                      ${
-                        currentQuestionIndex === index
-                          ? "ring-2 ring-teal-500 ring-offset-2"
-                          : ""
-                      }
-                      focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2`}
+                    onClick={() => goToIndex(index)}
+                    disabled={selectionLocked}
+                    className={`aspect-square rounded-lg text-sm font-medium transition-all duration-200 ${answers[index] ? 'bg-teal-500 text-white' : 'bg-gray-50 text-gray-600 hover:bg-teal-50 hover:text-teal-600'} ${currentQuestionIndex === index ? 'ring-2 ring-teal-500 ring-offset-2' : ''} focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${selectionLocked ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
                     {index + 1}
                   </button>
